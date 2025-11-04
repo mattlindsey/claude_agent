@@ -163,3 +163,31 @@ Bug reports and pull requests are welcome on GitHub.
 ## License
 
 The gem is available as open source under the terms of the [MIT License](LICENSE).
+
+
+
+Next Steps
+
+  To build and test the gem:
+
+  # Install dependencies
+  bundle install
+
+  # Run tests
+  bundle exec rspec
+
+  # Build the gem
+  bundle exec rake build
+
+  # Install locally
+  bundle exec rake install
+
+  To use in another project:
+
+  # In Gemfile
+  gem 'claude_agent', path: '/path/to/claude_agent'
+
+  # Or after publishing to RubyGems
+  gem 'claude_agent'
+
+  The gem is now ready for development, testing, and eventual publication to RubyGems.org!
