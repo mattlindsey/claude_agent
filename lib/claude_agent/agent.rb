@@ -4,14 +4,48 @@ require "open3"
 require "json"
 require "fileutils"
 require "securerandom"
+require_relative "callback_support"
 
 module ClaudeAgent
   class Agent
+    include CallbackSupport
+
+    class ConnectionError < StandardError; end
+
     attr_reader :name, :sandbox_dir, :timezone, :skip_permissions, :verbose,
                 :system_prompt, :mcp_servers, :model, :session_key,
                 :context, :conversation_history
 
-    def initialize(
+    # Users can register callbacks in two ways:
+    # class MyAgent < ClaudeAgent::Agent
+    #   # Using a method name
+    #   on_event :my_handler
+    #
+    #   def my_handler(event)
+    #     text = event.dig("delta", "text")
+    #     # Process the streaming text
+    #   end
+    # end
+    #
+    # Or using a block
+    # class MyAgent < ClaudeAgent::Agent
+    #   on_event do |event|
+    #     text = event.dig("delta", "text")
+    #     # Process the streaming text
+    #   end
+    # end
+
+    def initialize(name: "MyName", sandbox_dir: "./sandbox", model: "claude-sonnet-4-5-20250929")
+      @name = name
+      @sandbox_dir = sandbox_dir
+      @model = model
+      @stdin = nil
+      @stdout = nil
+      @stderr = nil
+      @wait_thr = nil
+    end
+    
+    def chat(
       name: "MyName",
       sandbox_dir: "./sandbox",
       timezone: "Eastern Time (US & Canada)",
@@ -52,9 +86,10 @@ module ClaudeAgent
       end
 
       puts "Claude process started successfully (PID: #{@wait_thr.pid})"
+      self
     end
 
-    def chat(message)
+    def ask(message) 
       return if message.nil? || message.strip.empty?
 
       send_message(message)
@@ -200,6 +235,7 @@ module ClaudeAgent
                 puts "[ERROR] #{event["message"]}"
                 break
               end
+              run_callbacks(event)
             rescue JSON::ParserError => e
               $stderr.puts "Failed to parse JSON: #{line[0..100]}"
               next
@@ -213,5 +249,19 @@ module ClaudeAgent
     end
   end
 
-  class ConnectionError < StandardError; end
+  class SampleAgent < Agent
+  # Example of a new Agent subclass
+
+    def initialize
+      super(name: "SampleAgent", sandbox_dir: "./coding_sandbox", model: "claude-sonnet-4-5-20250929")
+    end
+
+    on_event :on_event_callback
+    # after_event :method_name
+
+    def on_event_callback event
+      puts "Event triggered!"
+    end
+  end
+
 end
