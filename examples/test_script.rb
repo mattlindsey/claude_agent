@@ -1,12 +1,8 @@
 require 'claude_agent'
 
-agent = ClaudeAgent::Agent.new(
-  name: "MyAssistant",
-  sandbox_dir: "./sandbox",
-  system_prompt: "You are a helpful assistant"
-)
+agent = ClaudeAgent.chat_sample_agent
 
-response = agent.chat("Hello, can you help me write some Ruby code?")
+response = agent.ask("Hello, can you help me write a short story?")
 puts response
 
 agent.close
