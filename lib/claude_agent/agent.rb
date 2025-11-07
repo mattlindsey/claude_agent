@@ -215,12 +215,10 @@ module ClaudeAgent
                       if block["type"] == "text" && block["text"]
                         text = block["text"]
                         response_text += text
-                        puts text
                       end
                     end
                   elsif content.is_a?(String)
                     response_text += content
-                    puts content
                   end
                 end
               when "content_block_delta"
