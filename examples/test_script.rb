@@ -4,10 +4,8 @@ class MyAgent < ClaudeAgent::Agent
   on_event :my_handler
   
   def my_handler(event)
-    text = event.dig("delta", "text")
-    # Process the streaming text
-    # puts text if text
     puts "Event triggered"
+    puts "Received event: #{event.dig("message", "id")}"
   end
 end
 
