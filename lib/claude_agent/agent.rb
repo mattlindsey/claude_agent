@@ -50,6 +50,18 @@ module ClaudeAgent
       @stdout = nil
       @stderr = nil
       @wait_thr = nil
+      @parsed_lines = []
+      @parsed_lines_mutex = Mutex.new
+
+      if @session_key.nil?
+        inject_streaming_response({
+          type: "system",
+          subtype: "prompt",
+          system_prompt: @system_prompt,
+          timestamp: Time.now.iso8601(6),
+          received_at: Time.now.iso8601(6)
+        })
+      end
     end
 
     def config
@@ -111,6 +123,19 @@ module ClaudeAgent
       @stdout = nil
       @stderr = nil
       @wait_thr = nil
+    end
+
+    def inject_streaming_response(event_hash)
+      stringified_event = event_hash.transform_keys(&:to_s)
+      all_lines = nil
+      @parsed_lines_mutex.synchronize do
+        @parsed_lines << stringified_event
+        all_lines = @parsed_lines.dup
+      end
+
+      #trigger_message(stringified_event, all_lines)
+      #trigger_dynamic_callbacks(stringified_event, all_lines)
+      #trigger_custom_message_callbacks(stringified_event, all_lines)
     end
 
     private
@@ -205,14 +230,14 @@ module ClaudeAgent
         next if line.empty?
 
         begin
-          event = JSON.parse(line)
+          message = JSON.parse(line)
 
-          case event['type']
+          case message['type']
           when 'system'
             next
           when 'assistant'
-            if event.dig('message', 'content')
-              content = event['message']['content']
+            if message.dig('message', 'content')
+              content = message['message']['content']
               if content.is_a?(Array)
                 content.each do |block|
                   if block['type'] == 'text' && block['text']
@@ -225,18 +250,18 @@ module ClaudeAgent
               end
             end
           when 'content_block_delta'
-            if event.dig('delta', 'text')
-              text = event['delta']['text']
+            if message.dig('delta', 'text')
+              text = message['delta']['text']
               response_text += text
               print text
             end
           when 'result'
             break
           when 'error'
-            puts "[ERROR] #{event['message']}"
+            puts "[ERROR] #{message['message']}"
             break
           end
-          run_callbacks(event)
+          run_callbacks(message)
         rescue JSON::ParserError
           warn "Failed to parse JSON: #{line[0..100]}"
           next
