@@ -125,18 +125,18 @@ module ClaudeAgent
       @wait_thr = nil
     end
 
-  def inject_streaming_response(event_hash)
-    stringified_event = event_hash.transform_keys(&:to_s)
-    all_lines = nil
-    @parsed_lines_mutex.synchronize do
-      @parsed_lines << stringified_event
-      all_lines = @parsed_lines.dup
-    end
+    def inject_streaming_response(event_hash)
+      stringified_event = event_hash.transform_keys(&:to_s)
+      all_lines = nil
+      @parsed_lines_mutex.synchronize do
+        @parsed_lines << stringified_event
+        all_lines = @parsed_lines.dup
+      end
 
-    #trigger_message(stringified_event, all_lines)
-    #trigger_dynamic_callbacks(stringified_event, all_lines)
-    #trigger_custom_message_callbacks(stringified_event, all_lines)
-  end
+      #trigger_message(stringified_event, all_lines)
+      #trigger_dynamic_callbacks(stringified_event, all_lines)
+      #trigger_custom_message_callbacks(stringified_event, all_lines)
+    end
 
     private
 
