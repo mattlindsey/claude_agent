@@ -1,4 +1,6 @@
-require_relative "callback_support"
+# frozen_string_literal: true
+
+require_relative 'callback_support'
 
 module ClaudeAgent
   class Agent
@@ -11,7 +13,7 @@ module ClaudeAgent
                 :context, :conversation_history
 
     # Configure parameters for the Agent(s) like this or when initializing:
-    # 
+    #
     # ClaudeAgent.configure do |config|
     #   config.anthropic_api_key = ENV['ANTHROPIC_API_KEY'] # Not strictly necessary with Claude SDK
     #   config.system_prompt = "You are a helpful AI human resources assistant."
@@ -20,7 +22,7 @@ module ClaudeAgent
     # end
 
     # Users can register callbacks in two ways:
-    # 
+    #
     # class MyAgent < ClaudeAgent::Agent
     #   # Using a method name
     #   on_event :my_handler
@@ -39,7 +41,7 @@ module ClaudeAgent
     #   end
     # end
 
-    def initialize(name: "MyName", system_prompt: nil, model: nil, sandbox_dir: nil)
+    def initialize(name: 'MyName', system_prompt: nil, model: nil, sandbox_dir: nil)
       @name = name
       @system_prompt = system_prompt || config.system_prompt
       @model = model || config.model
@@ -53,12 +55,12 @@ module ClaudeAgent
     def config
       ClaudeAgent.configuration ||= ClaudeAgent::Configuration.new
     end
-    
+
     def chat(
-      timezone: "Eastern Time (US & Canada)",
+      timezone: 'Eastern Time (US & Canada)',
       skip_permissions: true,
       verbose: true,
-      mcp_servers: {headless_browser: {type: :http, url: "http://0.0.0.0:4567/mcp"}},
+      mcp_servers: { headless_browser: { type: :http, url: 'http://0.0.0.0:4567/mcp' } },
       session_key: nil,
       resume_session: false,
       **additional_context
@@ -88,12 +90,12 @@ module ClaudeAgent
       self
     end
 
-    def ask(message) 
+    def ask(message)
       return if message.nil? || message.strip.empty?
 
       send_message(message)
       read_response
-    rescue => e
+    rescue StandardError
       raise
     end
 
@@ -103,7 +105,7 @@ module ClaudeAgent
       @stdin.close unless @stdin.closed?
       @stdout.close unless @stdout.closed?
       @stderr.close unless @stderr.closed?
-      @wait_thr.join if @wait_thr
+      @wait_thr&.join
     ensure
       @stdin = nil
       @stdout = nil
@@ -121,10 +123,10 @@ module ClaudeAgent
     end
 
     def build_claude_command
-      puts "Building Claude command..."
+      puts 'Building Claude command...'
 
-      cmd = "claude -p --dangerously-skip-permissions --output-format=stream-json --input-format=stream-json"
-      cmd += " --verbose" if @verbose
+      cmd = 'claude -p --dangerously-skip-permissions --output-format=stream-json --input-format=stream-json'
+      cmd += ' --verbose' if @verbose
       cmd += " --system-prompt #{Shellwords.escape(@system_prompt)}"
       cmd += " --model #{Shellwords.escape(@model)}"
 
@@ -133,51 +135,51 @@ module ClaudeAgent
         cmd += " --mcp-config #{Shellwords.escape(mcp_config_json)}"
       end
 
-      cmd += " --setting-sources \"\""
+      cmd += ' --setting-sources ""'
       cmd += " --resume #{Shellwords.escape(@session_key)}" if @resume_session && @session_key
       cmd
     end
 
     def build_mcp_config(mcp_servers)
-      servers = mcp_servers.transform_keys { |k| k.to_s.gsub("_", "-") }
-      {mcpServers: servers}
+      servers = mcp_servers.transform_keys { |k| k.to_s.gsub('_', '-') }
+      { mcpServers: servers }
     end
 
     def spawn_process(command, sandbox_dir)
       puts "Spawning process with command: #{command}"
 
-      command_to_run = if $stdout.tty? && File.exist?("./stream.rb")
-        "#{command} | tee >(ruby ./stream.rb >/dev/tty)"
-      else
-        command
-      end
+      command_to_run = if $stdout.tty? && File.exist?('./stream.rb')
+                         "#{command} | tee >(ruby ./stream.rb >/dev/tty)"
+                       else
+                         command
+                       end
 
-      stdin, stdout, stderr, wait_thr = Open3.popen3("bash", "-lc", command_to_run, chdir: sandbox_dir)
+      stdin, stdout, stderr, wait_thr = Open3.popen3('bash', '-lc', command_to_run, chdir: sandbox_dir)
       [stdin, stdout, stderr, wait_thr]
     end
 
     def send_message(content, session_id = nil)
-      raise ConnectionError, "Not connected to Claude" unless @stdin
+      raise ConnectionError, 'Not connected to Claude' unless @stdin
 
       unless @wait_thr&.alive?
-        error_output = @stderr&.read || "Unknown error"
+        error_output = @stderr&.read || 'Unknown error'
         raise ConnectionError, "Claude process has died. Error: #{error_output}"
       end
 
       message_json = {
-        type: "user",
-        message: {role: "user", content: content},
+        type: 'user',
+        message: { role: 'user', content: content },
         session_id: session_id
       }.compact
 
       @stdin.puts JSON.generate(message_json)
       @stdin.flush
-    rescue => e
+    rescue StandardError
       raise
     end
 
     def read_response
-      response_text = ""
+      response_text = ''
 
       loop do
         unless @wait_thr.alive?
@@ -187,57 +189,57 @@ module ClaudeAgent
 
         ready = IO.select([@stdout, @stderr], nil, nil, 0.1)
 
-        if ready
-          if ready[0].include?(@stderr)
-            error_line = @stderr.gets
-            $stderr.puts error_line if error_line
-          end
+        next unless ready
 
-          if ready[0].include?(@stdout)
-            line = @stdout.gets
-            break unless line
+        if ready[0].include?(@stderr)
+          error_line = @stderr.gets
+          warn error_line if error_line
+        end
 
-            line = line.strip
-            next if line.empty?
+        next unless ready[0].include?(@stdout)
 
-            begin
-              event = JSON.parse(line)
+        line = @stdout.gets
+        break unless line
 
-              case event["type"]
-              when "system"
-                next
-              when "assistant"
-                if event.dig("message", "content")
-                  content = event["message"]["content"]
-                  if content.is_a?(Array)
-                    content.each do |block|
-                      if block["type"] == "text" && block["text"]
-                        text = block["text"]
-                        response_text += text
-                      end
-                    end
-                  elsif content.is_a?(String)
-                    response_text += content
+        line = line.strip
+        next if line.empty?
+
+        begin
+          event = JSON.parse(line)
+
+          case event['type']
+          when 'system'
+            next
+          when 'assistant'
+            if event.dig('message', 'content')
+              content = event['message']['content']
+              if content.is_a?(Array)
+                content.each do |block|
+                  if block['type'] == 'text' && block['text']
+                    text = block['text']
+                    response_text += text
                   end
                 end
-              when "content_block_delta"
-                if event.dig("delta", "text")
-                  text = event["delta"]["text"]
-                  response_text += text
-                  print text
-                end
-              when "result"
-                break
-              when "error"
-                puts "[ERROR] #{event["message"]}"
-                break
+              elsif content.is_a?(String)
+                response_text += content
               end
-              run_callbacks(event)
-            rescue JSON::ParserError => e
-              $stderr.puts "Failed to parse JSON: #{line[0..100]}"
-              next
             end
+          when 'content_block_delta'
+            if event.dig('delta', 'text')
+              text = event['delta']['text']
+              response_text += text
+              print text
+            end
+          when 'result'
+            break
+          when 'error'
+            puts "[ERROR] #{event['message']}"
+            break
           end
+          run_callbacks(event)
+        rescue JSON::ParserError
+          warn "Failed to parse JSON: #{line[0..100]}"
+          next
         end
       end
 
@@ -247,17 +249,16 @@ module ClaudeAgent
   end
 
   class SampleAgent < Agent
-  # Example of a new Agent subclass
+    # Example of a new Agent subclass
 
     def initialize
-      super(name: "SampleAgent", sandbox_dir: "./coding_sandbox")
+      super(name: 'SampleAgent', sandbox_dir: './coding_sandbox')
     end
 
     on_event :on_event_callback
 
-    def on_event_callback event
-      puts "Event triggered!"
+    def on_event_callback(_event)
+      puts 'Event triggered!'
     end
   end
-
 end

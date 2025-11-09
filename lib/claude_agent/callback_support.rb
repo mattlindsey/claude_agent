@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # callback_support.rb
 module CallbackSupport
   def self.included(base)
