@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+# Before running:
+# start the hbt server: 
+#   bundle exec hbt start --no-headless --be-human --single-session --session-id=amazon
+# claude mcp add --transport http headless-browser http://localhost:4567/mcp
+# claude --dangerously-skip-permissions
+
 require 'claude_agent'
 
 class MyAgent < ClaudeAgent::Agent
@@ -20,13 +26,13 @@ end
 
 ClaudeAgent.configure do |config|
   config.anthropic_api_key = ENV['ANTHROPIC_API_KEY'] # Not strictly necessary with claude installed
-  config.system_prompt = 'You are a helpful AI human resources assistant.'
+  config.system_prompt = 'You are a helpful AI news  assistant.'
   config.model = 'claude-sonnet-4-5-20250929'
-  config.sandbox_dir = './hr_sandbox'
+  config.sandbox_dir = './news_sandbox'
 end
 
-agent = MyAgent.new(name: 'HR-Agent').chat
+agent = MyAgent.new(name: 'News-Agent').connect
 
-puts agent.ask('Hello, can you help me write a resume?')
+puts agent.ask('Go to google.com and search for Boston')
 
 agent.close

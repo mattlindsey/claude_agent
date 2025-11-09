@@ -40,7 +40,7 @@ agent = ClaudeAgent::Agent.new(
   name: "MyAssistant",
   sandbox_dir: "./sandbox",
   system_prompt: "You are a helpful assistant"
-).chat
+).connect
 
 # Send messages using ask()
 response = agent.ask("Hello, can you help me write some Ruby code?")
@@ -61,7 +61,7 @@ The `new()` method accepts basic configuration:
 - `system_prompt`: Initial system instructions
 - `model`: Claude model to use
 
-The `chat()` method accepts runtime configuration and starts the Claude process:
+The `connect()` method accepts runtime configuration and starts the Claude process:
 
 - `timezone`: Timezone for Claude context
 - `skip_permissions`: Skip permission prompts (default: true)
@@ -80,7 +80,7 @@ agent = ClaudeAgent::Agent.new(
 )
 
 # Connect with runtime config
-agent.chat(
+agent.connect(
   timezone: "Eastern Time (US & Canada)",
   skip_permissions: true,
   verbose: true,
@@ -106,7 +106,7 @@ agent = ClaudeAgent::Agent.new(
   name: "WebAutomation",
   sandbox_dir: "./web_sandbox",
   system_prompt: "You are a web automation assistant"
-).chat
+).connect
 
 response = agent.ask("Navigate to example.com and extract the page title")
 
@@ -115,7 +115,7 @@ agent = ClaudeAgent::Agent.new(
   name: "WebAutomation",
   sandbox_dir: "./web_sandbox",
   system_prompt: "You are a web automation assistant"
-).chat(
+).connect(
   mcp_servers: {
     headless_browser: {
       type: :http,
@@ -137,7 +137,7 @@ agent = ClaudeAgent::Agent.new(
 agent = ClaudeAgent::Agent.new(
   name: "MyAgent",
   sandbox_dir: "./sandbox"
-).chat(
+).connect(
   session_key: "my-unique-session-id"
 )
 
@@ -145,7 +145,7 @@ agent = ClaudeAgent::Agent.new(
 agent = ClaudeAgent::Agent.new(
   name: "MyAgent",
   sandbox_dir: "./sandbox"
-).chat(
+).connect(
   session_key: "my-unique-session-id",
   resume_session: true
 )
@@ -183,7 +183,7 @@ class MyBlockAgent < ClaudeAgent::Agent
 end
 
 # Initialize and use
-agent = MyAgent.new(name: 'CallbackAgent', sandbox_dir: './sandbox').chat
+agent = MyAgent.new(name: 'CallbackAgent', sandbox_dir: './sandbox').connect
 agent.ask("Tell me a story")
 agent.close
 ```
@@ -195,7 +195,7 @@ begin
   agent = ClaudeAgent::Agent.new(
     name: "ErrorHandlingAgent",
     sandbox_dir: "./sandbox"
-  ).chat
+  ).connect
 
   response = agent.ask("Hello!")
   puts response

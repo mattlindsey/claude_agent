@@ -22,16 +22,4 @@ module ClaudeAgent
     self.configuration ||= Configuration.new
     yield(configuration)
   end
-
-  def self.chat(...)
-    agent = Agent.new
-    agent.chat(...)
-    agent
-  end
-
-  def self.chat_sample_agent(...)
-    agent = ClaudeAgent::SampleAgent.new
-    agent.chat(...)
-    agent
-  end
 end

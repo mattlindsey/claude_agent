@@ -68,7 +68,7 @@ module ClaudeAgent
       ClaudeAgent.configuration ||= ClaudeAgent::Configuration.new
     end
 
-    def chat(
+    def connect(
       timezone: 'Eastern Time (US & Canada)',
       skip_permissions: true,
       verbose: true,
@@ -132,10 +132,11 @@ module ClaudeAgent
         @parsed_lines << stringified_event
         all_lines = @parsed_lines.dup
       end
-
-      #trigger_message(stringified_event, all_lines)
-      #trigger_dynamic_callbacks(stringified_event, all_lines)
-      #trigger_custom_message_callbacks(stringified_event, all_lines)
+      
+      # TODO: event handling(?)
+      # trigger_event(stringified_event, all_lines)
+      # trigger_dynamic_callbacks(stringified_event, all_lines)
+      # trigger_custom_event_callbacks(stringified_event, all_lines)
     end
 
     private
@@ -270,20 +271,6 @@ module ClaudeAgent
 
       puts
       response_text
-    end
-  end
-
-  class SampleAgent < Agent
-    # Example of a new Agent subclass
-
-    def initialize
-      super(name: 'SampleAgent', sandbox_dir: './coding_sandbox')
-    end
-
-    on_event :on_event_callback
-
-    def on_event_callback(_event)
-      puts 'Event triggered!'
     end
   end
 end
