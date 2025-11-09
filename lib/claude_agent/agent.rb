@@ -1,9 +1,3 @@
-require "reline"
-require "shellwords"
-require "open3"
-require "json"
-require "fileutils"
-require "securerandom"
 require_relative "callback_support"
 
 module ClaudeAgent
@@ -16,7 +10,17 @@ module ClaudeAgent
                 :system_prompt, :mcp_servers, :model, :session_key,
                 :context, :conversation_history
 
+    # Configure parameters for the Agent(s) like this or when initializing:
+    # 
+    # ClaudeAgent.configure do |config|
+    #   config.anthropic_api_key = ENV['ANTHROPIC_API_KEY'] # Not strictly necessary with Claude SDK
+    #   config.system_prompt = "You are a helpful AI human resources assistant."
+    #   config.model = "claude-sonnet-4-5-20250929"
+    #   config.sandbox_dir = "./hr_sandbox"
+    # end
+
     # Users can register callbacks in two ways:
+    # 
     # class MyAgent < ClaudeAgent::Agent
     #   # Using a method name
     #   on_event :my_handler
@@ -27,46 +31,42 @@ module ClaudeAgent
     #   end
     # end
     #
-    # Or using a block
     # class MyAgent < ClaudeAgent::Agent
+    #   # Using a block
     #   on_event do |event|
     #     text = event.dig("delta", "text")
     #     # Process the streaming text
     #   end
     # end
 
-    def initialize(name: "MyName", sandbox_dir: "./sandbox", model: "claude-sonnet-4-5-20250929")
+    def initialize(name: "MyName", system_prompt: "", model: "", sandbox_dir: "./sandbox")
       @name = name
-      @sandbox_dir = sandbox_dir
-      @model = model
+      @system_prompt ||= system_prompt
+      @model ||= model
+      @sandbox_dir ||= sandbox_dir
       @stdin = nil
       @stdout = nil
       @stderr = nil
       @wait_thr = nil
     end
+
+    def config
+      ClaudeAgent.configuration ||= ClaudeAgent::Configuration.new
+    end
     
     def chat(
-      name: "MyName",
-      sandbox_dir: "./sandbox",
       timezone: "Eastern Time (US & Canada)",
       skip_permissions: true,
       verbose: true,
-      system_prompt: "prompt",
       mcp_servers: {headless_browser: {type: :http, url: "http://0.0.0.0:4567/mcp"}},
-      model: "claude-sonnet-4-5-20250929",
       session_key: nil,
       resume_session: false,
       **additional_context
     )
-
-      @name = name
-      @sandbox_dir = sandbox_dir
       @timezone = timezone
       @skip_permissions = skip_permissions
       @verbose = verbose
-      @system_prompt = system_prompt
       @mcp_servers = mcp_servers
-      @model = model
       @session_key = session_key
       @resume_session = resume_session
       @context = additional_context
@@ -78,7 +78,6 @@ module ClaudeAgent
 
       @stdin, @stdout, @stderr, @wait_thr = spawn_process(command, @sandbox_dir)
 
-      # Check if process is alive
       sleep 0.5
       unless @wait_thr.alive?
         error_output = @stderr.read
@@ -251,11 +250,10 @@ module ClaudeAgent
   # Example of a new Agent subclass
 
     def initialize
-      super(name: "SampleAgent", sandbox_dir: "./coding_sandbox", model: "claude-sonnet-4-5-20250929")
+      super(name: "SampleAgent", sandbox_dir: "./coding_sandbox")
     end
 
     on_event :on_event_callback
-    # after_event :method_name
 
     def on_event_callback event
       puts "Event triggered!"

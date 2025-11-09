@@ -1,4 +1,10 @@
 require "dotenv/load"
+require "reline"
+require "shellwords"
+require "open3"
+require "json"
+require "fileutils"
+require "securerandom"
 
 require_relative "claude_agent/version"
 require_relative "claude_agent/configuration"
