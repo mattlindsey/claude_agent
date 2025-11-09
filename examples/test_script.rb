@@ -27,6 +27,6 @@ end
 
 agent = MyAgent.new(name: 'HR-Agent').chat
 
-agent.ask('Hello, can you help me write a resume?')
+puts agent.ask('Hello, can you help me write a resume?')
 
 agent.close

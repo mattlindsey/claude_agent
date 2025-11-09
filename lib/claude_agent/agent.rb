@@ -39,11 +39,11 @@ module ClaudeAgent
     #   end
     # end
 
-    def initialize(name: "MyName", system_prompt: "", model: "", sandbox_dir: "./sandbox")
+    def initialize(name: "MyName", system_prompt: nil, model: nil, sandbox_dir: nil)
       @name = name
-      @system_prompt ||= system_prompt
-      @model ||= model
-      @sandbox_dir ||= sandbox_dir
+      @system_prompt = system_prompt || config.system_prompt
+      @model = model || config.model
+      @sandbox_dir = sandbox_dir || config.sandbox_dir
       @stdin = nil
       @stdout = nil
       @stderr = nil
